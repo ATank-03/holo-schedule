@@ -176,8 +176,8 @@ try {
             }
 
             $apiKey = $config['youtube_api_key'] ?? null;
-            if (!$apiKey || $apiKey === 'YOUR_YOUTUBE_API_KEY_HERE') {
-                respond(['error' => 'YouTube API key niet geconfigureerd in config.php'], 500);
+            if (!$apiKey || $apiKey === 'YOUR_YOUTUBE_API_KEY_HERE' || $apiKey === 'AIzaSyAQeLPlEnOyJ499_tjqG-I0PkrJAWrLofY') {
+                respond(['error' => 'YouTube API key niet geconfigureerd of ongeldig in config.php. Vervang de placeholder door een geldige API key.'], 500);
             }
 
             $videosUrl = sprintf(
@@ -186,10 +186,48 @@ try {
                 urlencode($apiKey)
             );
 
-            $videosData = fetchJson($videosUrl);
+            try {
+                $videosData = fetchJson($videosUrl);
+            } catch (RuntimeException $e) {
+                respond(['error' => 'YouTube API aanvraag mislukt: ' . $e->getMessage()], 500);
+            }
+
             $items = isset($videosData['items']) && is_array($videosData['items']) ? $videosData['items'] : [];
+            
+            // Debug logging for YouTube API issues
+            if (!$items && isset($videosData['error'])) {
+                error_log('YouTube API Error: ' . print_r($videosData['error'], true));
+            }
+            
             if (!$items) {
-                respond(['error' => 'Kon geen informatie vinden voor deze YouTube-video.'], 404);
+                // Check if there's an error in the response
+                if (isset($videosData['error'])) {
+                    $errorMsg = $videosData['error']['message'] ?? 'Onbekende YouTube API fout';
+                    $errorCode = $videosData['error']['code'] ?? 0;
+                    $quotaError = strpos($errorMsg, 'quota') !== false || strpos($errorMsg, 'limit') !== false;
+                    
+                    $suggestions = [];
+                    if ($quotaError) {
+                        $suggestions[] = 'Je YouTube API quota is op. Wacht tot het reset (dagelijks) of verhoog je quota in Google Cloud Console.';
+                    }
+                    if ($errorCode === 403) {
+                        $suggestions[] = 'Controleer of je API key is ingeschakeld voor YouTube Data API v3.';
+                        $suggestions[] = 'Zorg ervoor dat je factureringsaccount is gekoppeld aan je Google Cloud project.';
+                    }
+                    
+                    $fullMessage = 'YouTube API fout: ' . $errorMsg . ' (code: ' . $errorCode . '). ' . implode(' ', $suggestions);
+                    respond(['error' => $fullMessage, 'debug' => ['error' => $videosData['error'], 'video_id' => $videoId]], $errorCode === 403 ? 403 : 500);
+                }
+                
+                // Check if video exists but has no liveStreamingDetails (not a live video)
+                if (isset($videosData['items']) && is_array($videosData['items']) && count($videosData['items']) > 0) {
+                    $item = $videosData['items'][0];
+                    if (!isset($item['liveStreamingDetails'])) {
+                        respond(['error' => 'Deze video is geen geplande livestream. Alleen livestreams met een geplande starttijd kunnen worden toegevoegd. Probeer een andere YouTube livestream URL.', 'debug' => ['video_data' => $item]], 422);
+                    }
+                }
+                
+                respond(['error' => 'Kon geen informatie vinden voor deze YouTube-video. Controleer of de URL correct is en of de video bestaat. De video moet een geplande livestream zijn met liveStreamingDetails.', 'debug' => ['response' => $videosData, 'video_id' => $videoId]], 404);
             }
 
             $v = $items[0];
@@ -234,21 +272,32 @@ try {
                 respond(['error' => 'Deze stream staat al in je schema.'], 409);
             }
 
-            $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, end_time_utc, category, created_at) 
-                VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :end_time_utc, :category, :created_at)');
-            $stmt->execute([
-                'streamer_id' => $user['id'],
-                'title' => $title,
-                'description' => $description,
-                'platform' => 'YouTube',
-                'url' => $normalizedUrl,
-                'start_time_utc' => $start->format(DATE_ATOM),
-                'end_time_utc' => $end ? $end->format(DATE_ATOM) : null,
-                'category' => $channelTitle,
-                'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
-            ]);
+            try {
+                $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, end_time_utc, category, created_at) 
+                    VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :end_time_utc, :category, :created_at)');
+                $success = $stmt->execute([
+                    'streamer_id' => $user['id'],
+                    'title' => $title,
+                    'description' => $description,
+                    'platform' => 'YouTube',
+                    'url' => $normalizedUrl,
+                    'start_time_utc' => $start->format(DATE_ATOM),
+                    'end_time_utc' => $end ? $end->format(DATE_ATOM) : null,
+                    'category' => $channelTitle,
+                    'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+                ]);
 
-            respond(['status' => 'ok']);
+                if (!$success) {
+                    $errorInfo = $stmt->errorInfo();
+                    respond(['error' => 'Database fout bij opslaan stream: ' . ($errorInfo[2] ?? 'Onbekende fout')], 500);
+                }
+
+                respond(['status' => 'ok']);
+            } catch (PDOException $e) {
+                respond(['error' => 'Database fout: ' . $e->getMessage()], 500);
+            } catch (Throwable $e) {
+                respond(['error' => 'Onverwachte fout: ' . $e->getMessage()], 500);
+            }
 
         case 'import_youtube_streams':
             $user = currentUser($pdo);
@@ -262,8 +311,8 @@ try {
             }
 
             $apiKey = $config['youtube_api_key'] ?? null;
-            if (!$apiKey || $apiKey === 'YOUR_YOUTUBE_API_KEY_HERE') {
-                respond(['error' => 'YouTube API key niet geconfigureerd in config.php'], 500);
+            if (!$apiKey || $apiKey === 'YOUR_YOUTUBE_API_KEY_HERE' || $apiKey === 'AIzaSyAQeLPlEnOyJ499_tjqG-I0PkrJAWrLofY') {
+                respond(['error' => 'YouTube API key niet geconfigureerd of ongeldig in config.php. Vervang de placeholder door een geldige API key.'], 500);
             }
 
             // 1) Zoek komende livestreams voor dit kanaal.

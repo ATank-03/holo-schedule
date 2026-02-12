@@ -101,7 +101,7 @@ declare(strict_types=1);
             overflow: hidden;
         }
         .schedule-table-scroll {
-            max-height: 420px;
+            max-height: 840px;
             overflow: auto;
         }
         table {
