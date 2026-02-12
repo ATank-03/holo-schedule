@@ -88,6 +88,9 @@ declare(strict_types=1);
         <div class="grid">
             <form id="register-form" class="card">
                 <h3>Registreren</h3>
+                <p style="font-size:0.9rem;opacity:0.85;">
+                    Accounts zijn altijd <strong>viewers</strong>. Gebruik je account om een persoonlijk kijk-schema te bouwen.
+                </p>
                 <label>
                     E-mail
                     <input type="email" name="email" required>
@@ -99,13 +102,6 @@ declare(strict_types=1);
                 <label>
                     Display naam
                     <input type="text" name="display_name" required>
-                </label>
-                <label>
-                    Rol
-                    <select name="role" required>
-                        <option value="viewer">Viewer</option>
-                        <option value="streamer">Streamer</option>
-                    </select>
                 </label>
                 <button type="submit">Registreren</button>
             </form>
@@ -126,84 +122,62 @@ declare(strict_types=1);
         <p id="auth-status"></p>
     </section>
 
-    <section id="streamer-section" class="card" hidden>
-        <h2>Streamer – beheer streams</h2>
-        <form id="create-stream-form">
-            <label>
-                Titel
-                <input type="text" name="title" required>
-            </label>
-            <label>
-                Beschrijving
-                <textarea name="description"></textarea>
-            </label>
-            <label>
-                Platform
-                <select name="platform" required>
-                    <option value="YouTube">YouTube</option>
-                    <option value="Twitch">Twitch</option>
-                    <option value="Other">Other</option>
-                </select>
-            </label>
-            <label>
-                Stream link (URL)
-                <input type="url" name="url" required>
-            </label>
-            <label>
-                Starttijd (UTC)
-                <input type="datetime-local" name="start_time" required>
-            </label>
-            <label>
-                Eindtijd (UTC)
-                <input type="datetime-local" name="end_time" required>
-            </label>
-            <button type="submit">Stream toevoegen</button>
-        </form>
-
-        <h3>Mijn geplande streams</h3>
-        <table id="streamer-streams-table">
-            <thead>
-            <tr>
-                <th>Titel</th>
-                <th>Start</th>
-                <th>Eind</th>
-                <th>Platform</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </section>
-
     <section id="viewer-section" class="card" hidden>
-        <h2>Viewer – schema</h2>
+        <h2>Mijn kijk-schema</h2>
 
-        <h3>Volg streamers</h3>
+        <h3>Streams toevoegen</h3>
         <div class="grid">
-            <form id="search-streamer-form">
+            <form id="add-stream-form">
                 <label>
-                    Zoeken op naam of ID
-                    <input type="text" name="query" placeholder="bijv. \"HoloFan\" of 3" required>
+                    Titel
+                    <input type="text" name="title" required>
                 </label>
-                <button type="submit">Zoek streamer</button>
+                <label>
+                    Kanaal / streamer naam
+                    <input type="text" name="channel_name" placeholder="bijv. \"Mori Calliope\"" required>
+                </label>
+                <label>
+                    Platform
+                    <select name="platform" required>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Twitch">Twitch</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </label>
+                <label>
+                    Stream link (URL)
+                    <input type="url" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
+                </label>
+                <label>
+                    Starttijd (UTC)
+                    <input type="datetime-local" name="start_time" required>
+                </label>
+                <label>
+                    Eindtijd (UTC)
+                    <input type="datetime-local" name="end_time" required>
+                </label>
+                <button type="submit">Stream handmatig toevoegen</button>
             </form>
-            <form id="follow-form">
+
+            <form id="import-youtube-form">
                 <label>
-                    Streamer ID om te volgen
-                    <input type="number" name="streamer_id" min="1" required>
+                    YouTube channel ID
+                    <input type="text" name="channel_id" placeholder="bijv. UC... (channel ID)" required>
                 </label>
-                <button type="submit">Direct volgen</button>
+                <small>
+                    Holo-schedule haalt geplande livestreams voor dit kanaal op met de YouTube API en voegt ze toe aan jouw schema.
+                </small>
+                <button type="submit">YouTube-streams importeren</button>
             </form>
         </div>
 
-        <div id="search-results"></div>
-
-        <h3>Mijn schema</h3>
+        <h3 style="margin-top:2rem;">Mijn schema</h3>
         <button id="refresh-schedule">Ververs schema</button>
         <table id="schedule-table">
             <thead>
             <tr>
                 <th>Datum (UTC)</th>
-                <th>Streamer</th>
+                <th>Kanaal</th>
                 <th>Titel</th>
                 <th>Start (UTC)</th>
                 <th>Eind (UTC)</th>
