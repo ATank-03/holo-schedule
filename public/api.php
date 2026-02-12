@@ -63,6 +63,33 @@ function fetchJson(string $url): array
     return $data;
 }
 
+/**
+ * Extract a YouTube video ID from a URL (supports youtu.be and youtube.com/watch?v=...).
+ */
+function extractYouTubeVideoId(string $url): ?string
+{
+    $parts = parse_url($url);
+    if ($parts === false) {
+        return null;
+    }
+
+    $host = strtolower($parts['host'] ?? '');
+    if (str_contains($host, 'youtu.be')) {
+        $path = trim($parts['path'] ?? '', '/');
+        return $path !== '' ? $path : null;
+    }
+
+    if (str_contains($host, 'youtube.com')) {
+        $query = $parts['query'] ?? '';
+        parse_str($query, $qs);
+        if (!empty($qs['v']) && is_string($qs['v'])) {
+            return $qs['v'];
+        }
+    }
+
+    return null;
+}
+
 try {
     $config = require __DIR__ . '/../config.php';
     $db = new Database($config['db_path']);
@@ -125,7 +152,7 @@ try {
                        s.category AS streamer_name
                 FROM streams s
                 WHERE s.streamer_id = :viewer_id
-                  AND s.end_time_utc >= :now
+                  AND s.start_time_utc >= :now
                 ORDER BY s.start_time_utc ASC
             ');
             $stmt->execute([
@@ -140,37 +167,84 @@ try {
             if (!$user) {
                 respond(['error' => 'Inloggen vereist'], 403);
             }
-            requireFields($input, ['title', 'channel_name', 'platform', 'url', 'start_time', 'end_time']);
+            requireFields($input, ['url']);
 
-            $start = new DateTimeImmutable((string) $input['start_time'], new DateTimeZone('UTC'));
-            $end = new DateTimeImmutable((string) $input['end_time'], new DateTimeZone('UTC'));
-            if ($end <= $start) {
-                respond(['error' => 'Eindtijd moet na starttijd liggen'], 422);
+            $rawUrl = trim((string) $input['url']);
+            $videoId = extractYouTubeVideoId($rawUrl);
+            if ($videoId === null) {
+                respond(['error' => 'Alleen YouTube-links worden ondersteund voor automatisch invullen.'], 422);
             }
 
-            // Prevent overlapping entries in the personal schedule.
-            $overlapStmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM streams WHERE streamer_id = :sid AND NOT (end_time_utc <= :start OR start_time_utc >= :end)');
-            $overlapStmt->execute([
+            $apiKey = $config['youtube_api_key'] ?? null;
+            if (!$apiKey || $apiKey === 'YOUR_YOUTUBE_API_KEY_HERE') {
+                respond(['error' => 'YouTube API key niet geconfigureerd in config.php'], 500);
+            }
+
+            $videosUrl = sprintf(
+                'https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=%s&key=%s',
+                urlencode($videoId),
+                urlencode($apiKey)
+            );
+
+            $videosData = fetchJson($videosUrl);
+            $items = isset($videosData['items']) && is_array($videosData['items']) ? $videosData['items'] : [];
+            if (!$items) {
+                respond(['error' => 'Kon geen informatie vinden voor deze YouTube-video.'], 404);
+            }
+
+            $v = $items[0];
+            $snippet = $v['snippet'] ?? [];
+            $live = $v['liveStreamingDetails'] ?? [];
+
+            $title = (string) ($snippet['title'] ?? 'YouTube stream');
+            $description = (string) ($snippet['description'] ?? '');
+            $channelTitle = (string) ($snippet['channelTitle'] ?? '');
+
+            // Bepaal start- en eindtijd: gebruik liveStreamingDetails indien beschikbaar, anders publicatiedatum +2 uur.
+            $startIso = null;
+            if (isset($live['scheduledStartTime'])) {
+                $startIso = (string) $live['scheduledStartTime'];
+            } elseif (isset($snippet['publishedAt'])) {
+                $startIso = (string) $snippet['publishedAt'];
+            }
+            if ($startIso === null) {
+                $startIso = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+            }
+
+            $start = new DateTimeImmutable($startIso, new DateTimeZone('UTC'));
+
+            $end = null;
+            if (isset($live['scheduledEndTime'])) {
+                try {
+                    $end = new DateTimeImmutable((string) $live['scheduledEndTime'], new DateTimeZone('UTC'));
+                } catch (Throwable) {
+                    $end = null;
+                }
+            }
+
+            $normalizedUrl = 'https://www.youtube.com/watch?v=' . urlencode($videoId);
+
+            // Skip als deze URL al in het persoonlijke schema staat.
+            $existsStmt = $pdo->prepare('SELECT id FROM streams WHERE streamer_id = :sid AND url = :url LIMIT 1');
+            $existsStmt->execute([
                 'sid' => $user['id'],
-                'start' => $start->format(DATE_ATOM),
-                'end' => $end->format(DATE_ATOM),
+                'url' => $normalizedUrl,
             ]);
-            $overlap = (int) $overlapStmt->fetchColumn();
-            if ($overlap > 0) {
-                respond(['error' => 'Deze stream overlapt met een bestaande stream in je schema'], 422);
+            if ($existsStmt->fetch()) {
+                respond(['error' => 'Deze stream staat al in je schema.'], 409);
             }
 
             $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, end_time_utc, category, created_at) 
                 VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :end_time_utc, :category, :created_at)');
             $stmt->execute([
                 'streamer_id' => $user['id'],
-                'title' => trim((string) ($input['title'] ?? '')),
-                'description' => trim((string) ($input['description'] ?? '')),
-                'platform' => (string) $input['platform'],
-                'url' => (string) $input['url'],
+                'title' => $title,
+                'description' => $description,
+                'platform' => 'YouTube',
+                'url' => $normalizedUrl,
                 'start_time_utc' => $start->format(DATE_ATOM),
-                'end_time_utc' => $end->format(DATE_ATOM),
-                'category' => trim((string) ($input['channel_name'] ?? '')),
+                'end_time_utc' => $end ? $end->format(DATE_ATOM) : null,
+                'category' => $channelTitle,
                 'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
             ]);
 
@@ -246,17 +320,14 @@ try {
                 }
 
                 // Gebruik eventueel geplande eindtijd, anders +2 uur als ruwe schatting.
-                $end = null;
-                if (isset($live['scheduledEndTime'])) {
-                    try {
-                        $end = new DateTimeImmutable((string) $live['scheduledEndTime'], new DateTimeZone('UTC'));
-                    } catch (Throwable) {
-                        $end = null;
-                    }
+            $end = null;
+            if (isset($live['scheduledEndTime'])) {
+                try {
+                    $end = new DateTimeImmutable((string) $live['scheduledEndTime'], new DateTimeZone('UTC'));
+                } catch (Throwable) {
+                    $end = null;
                 }
-                if (!$end) {
-                    $end = $start->modify('+2 hours');
-                }
+            }
 
                 $url = 'https://www.youtube.com/watch?v=' . urlencode($videoId);
 
@@ -279,7 +350,7 @@ try {
                     'platform' => 'YouTube',
                     'url' => $url,
                     'start_time_utc' => $start->format(DATE_ATOM),
-                    'end_time_utc' => $end->format(DATE_ATOM),
+                    'end_time_utc' => $end ? $end->format(DATE_ATOM) : null,
                     'category' => $channelTitle,
                     'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
                 ]);

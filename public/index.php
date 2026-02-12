@@ -18,15 +18,17 @@ declare(strict_types=1);
             color: #e5e7eb;
         }
         main.container {
-            max-width: 900px;
+            max-width: 1120px;
             margin-top: 2rem;
             margin-bottom: 3rem;
+            padding-inline: 1rem;
         }
         header.app-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+            gap: 1rem;
         }
         header.app-header h1 {
             margin-bottom: 0.25rem;
@@ -37,6 +39,13 @@ declare(strict_types=1);
             background: rgba(15, 23, 42, 0.9);
             box-shadow: 0 18px 45px rgba(15, 23, 42, 0.7);
             border: 1px solid rgba(148, 163, 184, 0.3);
+            backdrop-filter: blur(16px);
+        }
+        h1, h2, h3 {
+            letter-spacing: 0.02em;
+        }
+        section#viewer-section h3 {
+            margin-bottom: 0.75rem;
         }
         #auth-section .grid {
             gap: 2rem;
@@ -54,18 +63,89 @@ declare(strict_types=1);
         #user-bar button {
             margin-left: 0.75rem;
         }
+        #viewer-section .grid {
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+        #add-stream-form,
+        #import-youtube-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        #add-stream-form button,
+        #import-youtube-form button {
+            align-self: flex-start;
+        }
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+        }
+        .schedule-header h3 {
+            margin: 0;
+        }
+        .schedule-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .schedule-table-shell {
+            border-radius: 0.9rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.95));
+            overflow: hidden;
+        }
+        .schedule-table-scroll {
+            max-height: 420px;
+            overflow: auto;
+        }
         table {
+            width: 100%;
             font-size: 0.9rem;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        #schedule-table thead {
+            background: rgba(15, 23, 42, 0.96);
+        }
+        #schedule-table th,
+        #schedule-table td {
+            padding: 0.55rem 0.75rem;
+            border-bottom: 1px solid rgba(31, 41, 55, 0.7);
+            white-space: nowrap;
         }
         #schedule-table tbody tr:nth-child(even) {
             background-color: rgba(15, 23, 42, 0.7);
         }
-        .schedule-stream {
-            display: block;
-            margin-bottom: 0.25rem;
+        #schedule-table td:nth-child(2),
+        #schedule-table td:nth-child(3),
+        #schedule-table td:nth-child(4),
+        #schedule-table td:nth-child(5),
+        #schedule-table td:nth-child(6) {
+            white-space: normal;
+            word-break: break-word;
         }
-        .schedule-stream small {
-            opacity: 0.8;
+        #schedule-table td:last-child a {
+            word-break: break-all;
+        }
+        @media (max-width: 768px) {
+            header.app-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            #auth-section .grid,
+            #viewer-section .grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .schedule-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -125,68 +205,31 @@ declare(strict_types=1);
     <section id="viewer-section" class="card" hidden>
         <h2>Mijn kijk-schema</h2>
 
-        <h3>Streams toevoegen</h3>
-        <div class="grid">
-            <form id="add-stream-form">
-                <label>
-                    Titel
-                    <input type="text" name="title" required>
-                </label>
-                <label>
-                    Kanaal / streamer naam
-                    <input type="text" name="channel_name" placeholder="bijv. \"Mori Calliope\"" required>
-                </label>
-                <label>
-                    Platform
-                    <select name="platform" required>
-                        <option value="YouTube">YouTube</option>
-                        <option value="Twitch">Twitch</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </label>
-                <label>
-                    Stream link (URL)
-                    <input type="url" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
-                </label>
-                <label>
-                    Starttijd (UTC)
-                    <input type="datetime-local" name="start_time" required>
-                </label>
-                <label>
-                    Eindtijd (UTC)
-                    <input type="datetime-local" name="end_time" required>
-                </label>
-                <button type="submit">Stream handmatig toevoegen</button>
-            </form>
-
-            <form id="import-youtube-form">
-                <label>
-                    YouTube channel ID
-                    <input type="text" name="channel_id" placeholder="bijv. UC... (channel ID)" required>
-                </label>
-                <small>
-                    Holo-schedule haalt geplande livestreams voor dit kanaal op met de YouTube API en voegt ze toe aan jouw schema.
-                </small>
-                <button type="submit">YouTube-streams importeren</button>
-            </form>
+        <div class="schedule-header">
+            <h3>Mijn schema</h3>
+            <div class="schedule-actions">
+                <a href="manage-streams.php" role="button" class="secondary">Streams toevoegen</a>
+                <button id="refresh-schedule">Ververs schema</button>
+            </div>
         </div>
-
-        <h3 style="margin-top:2rem;">Mijn schema</h3>
-        <button id="refresh-schedule">Ververs schema</button>
-        <table id="schedule-table">
-            <thead>
-            <tr>
-                <th>Datum (UTC)</th>
-                <th>Kanaal</th>
-                <th>Titel</th>
-                <th>Start (UTC)</th>
-                <th>Eind (UTC)</th>
-                <th>Platform</th>
-                <th>Link</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="schedule-table-shell">
+            <div class="schedule-table-scroll">
+                <table id="schedule-table">
+                    <thead>
+                    <tr>
+                        <th>Datum (UTC)</th>
+                        <th>Kanaal</th>
+                        <th>Titel</th>
+                        <th>Start (UTC)</th>
+                        <th>Uren tot start</th>
+                        <th>Platform</th>
+                        <th>Link</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </section>
 </main>
 

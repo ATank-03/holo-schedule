@@ -82,7 +82,8 @@ function renderScheduleGrid(streams = []) {
   });
 
   const today = new Date();
-  for (let i = 0; i < 7; i++) {
+  // Toon een maand (30 dagen) vooruit in plaats van 7 dagen.
+  for (let i = 0; i < 30; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const dateKey = d.toISOString().split("T")[0];
@@ -91,7 +92,7 @@ function renderScheduleGrid(streams = []) {
     if (dayStreams.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${dateKey}</td>
-        <td colspan="5" style="opacity:0.6;">Geen streams gepland</td>`;
+        <td colspan="6" style="opacity:0.6;">Geen streams gepland</td>`;
       tbody.appendChild(tr);
       continue;
     }
@@ -99,11 +100,24 @@ function renderScheduleGrid(streams = []) {
     dayStreams.forEach((s, idx) => {
       const tr = document.createElement("tr");
       const dateCell = idx === 0 ? dateKey : "";
+      const start = s.start_time_utc ? new Date(s.start_time_utc) : null;
+      let hoursUntil = "";
+      if (start && !Number.isNaN(start.getTime())) {
+        const now = new Date();
+        const diffMs = start.getTime() - now.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        const clamped = Math.max(0, diffHours);
+        const rounded = Math.round(clamped * 10) / 10; // één decimaal
+        hoursUntil = `${rounded} uur`;
+      } else {
+        hoursUntil = "onbekend";
+      }
+
       tr.innerHTML = `<td>${dateCell}</td>
         <td>${s.streamer_name || "-"}</td>
         <td>${s.title}</td>
         <td>${s.start_time_utc}</td>
-        <td>${s.end_time_utc}</td>
+        <td>${hoursUntil}</td>
         <td>${s.platform}</td>
         <td><a href="${s.url}" target="_blank">link</a></td>`;
       tbody.appendChild(tr);
