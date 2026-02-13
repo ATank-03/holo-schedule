@@ -109,7 +109,6 @@ classDiagram
         +platform TEXT
         +url TEXT
         +start_time_utc TEXT
-        +end_time_utc TEXT
         +category TEXT
         +is_recurring INTEGER
         +recurrence_rule TEXT

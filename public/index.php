@@ -126,9 +126,25 @@ declare(strict_types=1);
         #schedule-table td:nth-child(3),
         #schedule-table td:nth-child(4),
         #schedule-table td:nth-child(5),
-        #schedule-table td:nth-child(6) {
+        #schedule-table td:nth-child(6),
+        #schedule-table td:nth-child(7) {
             white-space: normal;
             word-break: break-word;
+        }
+
+        .remove-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .remove-btn:hover {
+            background-color: #cc0000;
         }
         #schedule-table td:last-child a {
             word-break: break-all;
@@ -224,6 +240,7 @@ declare(strict_types=1);
                         <th>Uren tot start</th>
                         <th>Platform</th>
                         <th>Link</th>
+                        <th>Acties</th>
                     </tr>
                     </thead>
                     <tbody></tbody>

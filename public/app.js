@@ -92,7 +92,7 @@ function renderScheduleGrid(streams = []) {
     if (dayStreams.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${dateKey}</td>
-        <td colspan="6" style="opacity:0.6;">Geen streams gepland</td>`;
+        <td colspan="7" style="opacity:0.6;">Geen streams gepland</td>`;
       tbody.appendChild(tr);
       continue;
     }
@@ -119,7 +119,8 @@ function renderScheduleGrid(streams = []) {
         <td>${s.start_time_utc}</td>
         <td>${hoursUntil}</td>
         <td>${s.platform}</td>
-        <td><a href="${s.url}" target="_blank">link</a></td>`;
+        <td><a href="${s.url}" target="_blank">link</a></td>
+        <td><button class="remove-btn" data-stream-id="${s.id}">Verwijderen</button></td>`;
       tbody.appendChild(tr);
     });
   }
@@ -203,5 +204,21 @@ window.addEventListener("DOMContentLoaded", () => {
 
   renderScheduleGrid([]);
   fetchCurrentUser();
+
+  // Add event listener for remove buttons (using event delegation)
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('remove-btn')) {
+      const streamId = e.target.getAttribute('data-stream-id');
+      if (streamId && confirm('Weet je zeker dat je deze stream wilt verwijderen?')) {
+        try {
+          await apiRequest('remove_stream', { stream_id: streamId });
+          await loadSchedule(); // Refresh the schedule after removal
+          showMessage('auth-status', 'Stream succesvol verwijderd');
+        } catch (err) {
+          showMessage('auth-status', 'Fout bij verwijderen: ' + err.message, true);
+        }
+      }
+    }
+  });
 });
 

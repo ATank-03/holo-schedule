@@ -148,7 +148,6 @@ try {
                        s.platform,
                        s.url,
                        s.start_time_utc,
-                       s.end_time_utc,
                        s.category AS streamer_name
                 FROM streams s
                 WHERE s.streamer_id = :viewer_id
@@ -251,14 +250,7 @@ try {
 
             $start = new DateTimeImmutable($startIso, new DateTimeZone('UTC'));
 
-            $end = null;
-            if (isset($live['scheduledEndTime'])) {
-                try {
-                    $end = new DateTimeImmutable((string) $live['scheduledEndTime'], new DateTimeZone('UTC'));
-                } catch (Throwable) {
-                    $end = null;
-                }
-            }
+
 
             $normalizedUrl = 'https://www.youtube.com/watch?v=' . urlencode($videoId);
 
@@ -273,8 +265,8 @@ try {
             }
 
             try {
-                $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, end_time_utc, category, created_at) 
-                    VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :end_time_utc, :category, :created_at)');
+                $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, category, created_at) 
+                    VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :category, :created_at)');
                 $success = $stmt->execute([
                     'streamer_id' => $user['id'],
                     'title' => $title,
@@ -282,7 +274,6 @@ try {
                     'platform' => 'YouTube',
                     'url' => $normalizedUrl,
                     'start_time_utc' => $start->format(DATE_ATOM),
-                    'end_time_utc' => $end ? $end->format(DATE_ATOM) : null,
                     'category' => $channelTitle,
                     'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
                 ]);
@@ -369,14 +360,6 @@ try {
                 }
 
                 // Gebruik eventueel geplande eindtijd, anders +2 uur als ruwe schatting.
-            $end = null;
-            if (isset($live['scheduledEndTime'])) {
-                try {
-                    $end = new DateTimeImmutable((string) $live['scheduledEndTime'], new DateTimeZone('UTC'));
-                } catch (Throwable) {
-                    $end = null;
-                }
-            }
 
                 $url = 'https://www.youtube.com/watch?v=' . urlencode($videoId);
 
@@ -390,8 +373,8 @@ try {
                     continue;
                 }
 
-                $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, end_time_utc, category, created_at) 
-                    VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :end_time_utc, :category, :created_at)');
+                $stmt = $pdo->prepare('INSERT INTO streams (streamer_id, title, description, platform, url, start_time_utc, category, created_at) 
+                    VALUES (:streamer_id, :title, :description, :platform, :url, :start_time_utc, :category, :created_at)');
                 $stmt->execute([
                     'streamer_id' => $user['id'],
                     'title' => $title,
@@ -399,7 +382,6 @@ try {
                     'platform' => 'YouTube',
                     'url' => $url,
                     'start_time_utc' => $start->format(DATE_ATOM),
-                    'end_time_utc' => $end ? $end->format(DATE_ATOM) : null,
                     'category' => $channelTitle,
                     'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
                 ]);
@@ -408,6 +390,32 @@ try {
             }
 
             respond(['imported_count' => $imported]);
+
+        case 'remove_stream':
+            $user = currentUser($pdo);
+            if (!$user) {
+                respond(['error' => 'Inloggen vereist'], 403);
+            }
+            requireFields($input, ['stream_id']);
+            
+            $streamId = (int) $input['stream_id'];
+            
+            // Verify the stream belongs to the user
+            $checkStmt = $pdo->prepare('SELECT id FROM streams WHERE id = :id AND streamer_id = :streamer_id');
+            $checkStmt->execute([
+                'id' => $streamId,
+                'streamer_id' => $user['id']
+            ]);
+            
+            if (!$checkStmt->fetch()) {
+                respond(['error' => 'Stream niet gevonden of je hebt geen toegang'], 404);
+            }
+            
+            // Delete the stream
+            $deleteStmt = $pdo->prepare('DELETE FROM streams WHERE id = :id');
+            $deleteStmt->execute(['id' => $streamId]);
+            
+            respond(['status' => 'ok', 'message' => 'Stream verwijderd']);
 
         default:
             respond(['error' => 'Unknown action'], 400);
