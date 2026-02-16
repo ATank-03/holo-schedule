@@ -1,0 +1,43 @@
+flowchart TD
+    User[User]
+    Librarian[Librarian]
+    Administrator[Administrator]
+
+    subgraph Library_App
+        UC1((Search Books))
+        UC2((Browse Catalog))
+        UC3((View Book Details))
+        UC4((Borrow Book))
+        UC5((Return Book))
+        UC6((Manage User Account))
+        UC7((View Borrowing History))
+        UC8((Renew Book))
+        UC9((Place Hold))
+        UC10((Manage Inventory))
+        UC11((Generate Reports))
+        UC12((Manage User Accounts))
+    end
+
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC5
+    User --> UC6
+    User --> UC7
+    User --> UC8
+    User --> UC9
+
+    Librarian --> UC4
+    Librarian --> UC5
+    Librarian --> UC10
+    Librarian --> UC9
+
+    Administrator --> UC12
+    Administrator --> UC11
+    Administrator --> UC10
+
+    UC1 -.->|include| UC3
+    UC2 -.->|include| UC3
+    UC4 -.->|include| UC3
+    UC8 -.->|extend| UC4

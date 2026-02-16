@@ -1,0 +1,15 @@
+{
+  "name": "example/library-rest-api",
+  "description": "Simple framework-less REST API for a library system, based on Mermaid diagrams.",
+  "type": "project",
+  "require": {
+    "php": ">=8.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0"
+  },
+  "scripts": {
+    "test": "phpunit"
+  }
+}
+

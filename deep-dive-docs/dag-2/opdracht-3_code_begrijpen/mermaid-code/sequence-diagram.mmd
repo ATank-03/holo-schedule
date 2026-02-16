@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant User
+    participant WebApp as Library Web App
+    participant API as Library REST API
+
+    User->>WebApp: Search for book (e.g., "1984")
+    WebApp->>API: GET /books?query=1984
+    API-->>WebApp: 200 OK, [Results]
+    WebApp-->>User: Display search results
+
+    User->>WebApp: Borrow book (Book ID: 123)
+    WebApp->>API: POST /borrow { bookId: 123, userId }
+    API-->>WebApp: 200 OK, Borrowed confirmation
+    WebApp-->>User: Show borrow success
+
+    User->>WebApp: Return book (Book ID: 123)
+    WebApp->>API: POST /return { bookId: 123, userId }
+    API-->>WebApp: 200 OK, Return confirmation
+    WebApp-->>User: Show return success

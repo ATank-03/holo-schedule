@@ -1,0 +1,26 @@
+[Day-1]
+
+Q: What is a large language model (LLM)?
+A: An AI that specializes in linguistic analysis and prediction, inspired by human neural networks (the brain). which can be trained to produce a specific response. And generally require large amounts of data (hence the Large, in Large language model).
+
+sources: https://www.beeminds.nl/simplified/large-language-model https://www.youtube.com/watch?v=LPZh9BOjkQs 
+
+==================
+
+Q: What is a GPT?
+A: A Generative Pre-trained Transformer is a type of AI language model that uses deep learning to process information. As the name suggests, it is "pre-trained" on a massive amount of unlabeled datasets to be able to best understand context, and is also "generative" meaning that it creates content based on prompts. It uses the "Transformer" architecture. examples are models like Chat-GPT made by OpenAI
+
+sources: https://www.youtube.com/shorts/-dX1uci7Mmw , https://www.geeksforgeeks.org/artificial-intelligence/introduction-to-generative-pre-trained-transformer-gpt/ 
+
+==================
+
+Q: Where does the term "vibe-coding" come from?
+A: "Vibe coding" was coined by Andrej Karpathy, a founding member of OpenAI and former director of AI at Tesla, in early February 2025. Karpathy defined it as a method where you "fully give in to the vibes, embrace exponentials, and forget the code even exists". The intention is to let AI write all the code while you only give it linguistic commands (prompts) instead of doing anything by hand. This is then supposed to speed up the process of writing code.
+
+sources: https://x.com/karpathy/status/1886192184808149383 , https://cloud.google.com/discover/what-is-vibe-coding , https://dev.to/nakrani/what-is-vibe-coding-who-made-this-viral-7om#:~:text=Origin,prototyping%20or%20small%2Dscale%20projects. 
+
+(personal note: I feel like the definition of vibe coding is somewhat loose and filled with buzzwords, and is likely just there to excite CEO's about something exponential, and give them the potential of replacing developers. Personally, I would also say that "forget the code even exists" is not very good advice, for anything more complex then a static website.)
+
+
+==================
+

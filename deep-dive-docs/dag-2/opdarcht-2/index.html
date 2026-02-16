@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Portfolio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="logo">My<span>Portfolio</span></div>
+      <nav class="nav">
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">
+          ☾
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="top">
+        <div class="hero-text">
+          <p class="eyebrow">Hello, I'm</p>
+          <h1>Your Name</h1>
+          <p class="subtitle">
+            A front-end / full-stack developer who enjoys building clean and simple web
+            experiences.
+          </p>
+          <div class="hero-actions">
+            <a href="#projects" class="btn primary">View my work</a>
+            <a href="#contact" class="btn ghost">Get in touch</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="section">
+        <div class="section-heading">
+          <h2>About</h2>
+          <p>A short introduction.</p>
+        </div>
+        <div class="about-grid">
+          <p>
+            Write a couple of lines here about who you are, what you like to work on,
+            and what you're learning at the moment.
+          </p>
+          <ul class="tag-list">
+            <li>HTML &amp; CSS</li>
+            <li>JavaScript</li>
+            <li>React</li>
+            <li>Node.js</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="projects" class="section">
+        <div class="section-heading">
+          <h2>Projects</h2>
+          <p>A few things I've built.</p>
+        </div>
+        <div class="projects-grid">
+          <article class="project-card">
+            <h3>Project One</h3>
+            <p>
+              Short description of your project. What problem does it solve? What did
+              you learn?
+            </p>
+            <p class="tech">HTML · CSS · JavaScript</p>
+          </article>
+          <article class="project-card">
+            <h3>Project Two</h3>
+            <p>
+              Another project summary. Keep it to 1–2 sentences so it's easy to scan.
+            </p>
+            <p class="tech">React · API</p>
+          </article>
+          <article class="project-card">
+            <h3>Project Three</h3>
+            <p>
+              One more project or experiment you are proud of. It can be small!
+            </p>
+            <p class="tech">Node.js · Express</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="contact" class="section">
+        <div class="section-heading">
+          <h2>Contact</h2>
+          <p>Interested in working together or just saying hi?</p>
+        </div>
+        <div class="contact-box">
+          <p>
+            You can reach me at
+            <a href="mailto:your@email.com"
+              >your@email.com</a
+            >
+            or on
+            <a href="https://linkedin.com" target="_blank" rel="noreferrer">LinkedIn</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <small>&copy; <span id="year"></span> Your Name. All rights reserved.</small>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+

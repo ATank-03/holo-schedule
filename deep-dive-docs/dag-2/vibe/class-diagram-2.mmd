@@ -1,0 +1,116 @@
+classDiagram
+    %% Users
+    class User {
+        +int id
+        +String name
+        +String email
+        +UserStatus status
+        +register()
+        +login()
+        +searchBooks(query): Book[]
+        +reserveBook(bookId)
+        +borrowBook(bookId)
+        +returnBook(bookId)
+        +writeReview(bookId, rating, comment)
+        +payPenalty(amount)
+        +receiveNotification(message)
+    }
+
+    class Librarian {
+        +int id
+        +String name
+        +addBook(book)
+        +removeBook(bookId)
+        +updateBook(book)
+        +manageUsers()
+    }
+
+    %% Books & categories
+    class Book {
+        +int id
+        +String title
+        +String author
+        +String isbn
+        +boolean available
+        +Category[] categories
+        +getInfo()
+    }
+
+    class Category {
+        +int id
+        +String name
+        +getBooks(): Book[]
+    }
+
+    %% Book reviews/ratings
+    class Review {
+        +int id
+        +int userId
+        +int bookId
+        +int rating
+        +String comment
+        +Date date
+    }
+
+    %% Loans/Reservations
+    class Loan {
+        +int id
+        +int userId
+        +int bookId
+        +Date loanDate
+        +Date dueDate
+        +Date? returnDate
+        +markReturned()
+    }
+
+    class Reservation {
+        +int id
+        +int userId
+        +int bookId
+        +Date reservationDate
+        +ReservationStatus status
+        +cancel()
+    }
+
+    %% Notifications
+    class Notification {
+        +int id
+        +int userId
+        +String message
+        +Date sentDate
+    }
+
+    %% Penalties
+    class Penalty {
+        +int id
+        +int userId
+        +double amount
+        +String reason
+        +Date issuedDate
+        +boolean paid
+        +pay()
+    }
+
+    %% Relations
+    User "1" --> "0..*" Loan : borrows
+    User "1" --> "0..*" Reservation : reserves
+    User "1" --> "0..*" Notification : receives
+    User "1" --> "0..*" Penalty : may incur
+    User "1" --> "0..*" Review : writes
+    User "1" <|-- Librarian : is a
+    Book "1" --> "0..*" Loan : can be
+    Book "1" --> "0..*" Reservation : can be reserved
+    Book "1" --> "0..*" Review : has
+    Book "*" --> "*" Category : categorized as
+    Category "1" --> "*" Book : includes
+    Loan "*" --> "1" Book : for
+    Loan "*" --> "1" User : by
+    Reservation "*" --> "1" Book : for
+    Review "*" --> "1" Book : for
+    Review "*" --> "1" User : by
+    Notification "*" --> "1" User : to
+    Penalty "*" --> "1" User : for
+
+    %% Enumerations (as notes)
+    note for User "UserStatus: ACTIVE, SUSPENDED, BANNED"
+    note for Reservation "ReservationStatus: ACTIVE, CANCELLED, EXPIRED"

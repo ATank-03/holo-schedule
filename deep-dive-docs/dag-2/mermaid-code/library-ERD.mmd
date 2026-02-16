@@ -1,0 +1,68 @@
+erDiagram
+    LIBRARY ||--o{ MEMBER : has
+    LIBRARY ||--o{ BOOK : owns
+    MEMBER ||--o{ LOAN : makes
+    BOOK ||--o{ LOAN : "is loaned in"
+    BOOK }o--|| AUTHOR : "written by"
+    BOOK }o--|| CATEGORY : "belongs to"
+    MEMBER ||--o{ RESERVATION : makes
+    BOOK ||--o{ RESERVATION : "is reserved in"
+
+    LIBRARY {
+        int library_id PK
+        string name
+        string address
+        string phone
+        string email
+    }
+
+    MEMBER {
+        int member_id PK
+        string name
+        string email
+        string phone
+        date membership_date
+        string membership_status
+        int library_id FK
+    }
+
+    BOOK {
+        int book_id PK
+        string title
+        string isbn
+        int author_id FK
+        int category_id FK
+        int library_id FK
+        int copies_available
+        int total_copies
+    }
+
+    AUTHOR {
+        int author_id PK
+        string name
+        string biography
+    }
+
+    CATEGORY {
+        int category_id PK
+        string category_name
+        string description
+    }
+
+    LOAN {
+        int loan_id PK
+        int member_id FK
+        int book_id FK
+        date loan_date
+        date due_date
+        date return_date
+        string status
+    }
+
+    RESERVATION {
+        int reservation_id PK
+        int member_id FK
+        int book_id FK
+        date reservation_date
+        string status
+    }

@@ -1,0 +1,33 @@
+classDiagram
+    class User {
+        +int id
+        +String name
+        +String email
+        +register()
+        +login()
+        +searchBooks(query)
+        +borrowBook(bookId)
+        +returnBook(bookId)
+    }
+    class Book {
+        +int id
+        +String title
+        +String author
+        +String isbn
+        +boolean available
+        +getInfo()
+    }
+    class Loan {
+        +int id
+        +int userId
+        +int bookId
+        +Date loanDate
+        +Date dueDate
+        +Date? returnDate
+        +markReturned()
+    }
+
+    User "1" --> "0..*" Loan : borrows
+    Loan "1" --> "1" Book : for
+
+    %% Optionally, you can add an Admin class if your API has admin operations.
